@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -19,7 +20,11 @@ public class LogController {
     @PostMapping(value="/log")
     public LoggerApiOutput logInput(@RequestBody Map<String, Object> payload){
         LoggerApiOutput output = new LoggerApiOutput();
-        loggingService.addLogs(payload);
+        try {
+            loggingService.addLogs(payload);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         output.setSuccess(true);
         output.setMessage("Successfully Added the log");
         return output;

@@ -24,10 +24,6 @@ public class ScheduledLogs {
     @Scheduled(fixedRate = 30000)
     public void reportCurrentTime() {
         log.info("The time is now {}", dateFormat.format(new Date()));
-        try {
-            logs.addLogsToDB();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        logs.addLogsToDB();
     }
 }

@@ -10,12 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,27 +25,32 @@ public class FlushLogsService {
     @Autowired
     LogService service;
     @Value("${file.path}")
-    private static final String filepath="/data/logs.txt";
+    private static final String filepath="/app/data/logs.txt";
 
-    @Async
-    public void addLogsToDB() throws IOException {
-        try(BufferedWriter writer = Files.newBufferedWriter(Paths.get(filepath));
-            BufferedReader reader = new BufferedReader(new FileReader(filepath))) {
+    public void addLogsToDB() {
+        try {
+            Path filePath = Paths.get(filepath);
+            List<String> logLines = Files.readAllLines(filePath);
+
             List<LogEntity> entities = new ArrayList<>();
-            String line = reader.readLine();
-            while (line != null) {
-                Gson gson = new Gson();
-                LogEntity entity = gson.fromJson(line, LogEntity.class);
-                entities.add(entity);
-                line = reader.readLine();
+            Gson gson = new Gson();
+
+            for (String logLine : logLines) {
+                System.out.println(logLine);
+                LogEntity entity = gson.fromJson(logLine, LogEntity.class);
+                System.out.println(entity.toString());
+                if (entity.getLogId() != null) {
+                    entities.add(entity);
+                }
             }
+
             service.addLogs(entities);
-            synchronized (writer) {
-                log.debug("flushing the logs to db now");
-                writer.flush();
-            }
+
+            Files.write(filePath, new byte[0], StandardOpenOption.TRUNCATE_EXISTING);
+
+            log.debug("Flushing the logs to the database now");
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("An error occurred while flushing logs to the database", e);
         }
     }
 }

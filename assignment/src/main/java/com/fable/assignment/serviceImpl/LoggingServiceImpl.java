@@ -22,29 +22,33 @@ public class LoggingServiceImpl implements LoggingService {
     ObjectUtils objectUtils;
 
     @Value("${file.path}")
-    private static final String filepath="/data/logs.txt";
+    private static final String filepath="/app/data/logs.txt";
     private static final Logger log = LoggerFactory.getLogger(LoggingServiceImpl.class);
 
     @Override
     @Async
     public void addLogs(Map<String, Object> payload) {
-        synchronized(payload) {
-            LoggerApiInput loggerApiInput = objectUtils.convertToLoggerInput(payload);
-            try {
-                log.info("Writing to the file now");
-                File file = new File(filepath);
-                FileWriter fr = new FileWriter(file, true);
-                PrintWriter br = new PrintWriter(fr);
-                br.println(loggerApiInput.toString());
-                if (getFileSizeMegaBytes(file) >= 10) {
-                    flushLogsService.addLogsToDB();
-                }
-                br.close();
-                fr.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+        sanitizePayload(payload);
+        log.info("Payload: {}", payload.toString());
+
+        try {
+            log.info("Writing to the file now");
+            File file = new File(filepath);
+
+            try (PrintWriter writer = new PrintWriter(new FileWriter(file, true))) {
+                writer.println(payload.toString());
             }
+
+            if (getFileSizeMegaBytes(file) >= 10) {
+                flushLogsService.addLogsToDB();
+            }
+        } catch (IOException e) {
+            log.error("An error occurred while writing logs to the file", e);
         }
+    }
+    private static void sanitizePayload(Map<String, Object> payload) {
+        payload.put("logId", payload.get("id"));
+        payload.remove("id");
     }
 
     private static double getFileSizeMegaBytes(File file) {
