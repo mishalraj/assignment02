@@ -1,12 +1,27 @@
-#FROM maven:3.9.2
-FROM openjdk:17
-#RUN #mvn clean install
-COPY target/assignment-0.0.1-SNAPSHOT.jar assignment-0.0.1-SNAPSHOT.jar
-ENTRYPOINT ["java","-jar","assignment-0.0.1-SNAPSHOT.jar"]
+FROM maven:3.8.4-openjdk-17-slim AS build
 
-# FROM maven:3.9.2-openjdk-17
+WORKDIR /assignment
 
-# WORKDIR /assignment
-# COPY . .
-#
-# CMD mvn spring-boot:run
+COPY pom.xml .
+
+RUN mvn dependency:go-offline -B
+
+COPY src ./src
+
+RUN mvn package -DskipTests
+
+
+FROM openjdk:17-jdk-slim AS production
+
+
+WORKDIR /assignment
+
+COPY --from=build /assignment/target/assignment-0.0.1-SNAPSHOT.jar .
+
+EXPOSE 8080
+
+CMD ["java", "-jar", "assignment-0.0.1-SNAPSHOT.jar"]
+
+
+
+

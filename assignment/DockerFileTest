@@ -1,0 +1,13 @@
+
+
+FROM ubuntu:latest
+
+RUN apt-get update && apt-get install -y curl
+
+COPY fire_requests.sh /assignment/fire_requests.sh
+
+WORKDIR /assignment
+
+RUN chmod +x fire_requests.sh
+
+CMD ["./fire_requests.sh"]
